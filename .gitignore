@@ -1,0 +1,111 @@
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Next.js
+/.next/
+/out/
+/.vercel/
+/build/
+
+# Production
+/dist
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.production.local
+.env.development.local
+.env.test.local
+
+# Editor directories and files
+.vscode
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+*~
+.#*
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Package manager
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Miscellaneous
+.cache/
+.npm
+.eslintcache
+.node_repl_history
+*.tsbuildinfo
+
+# Vercel
+.vercel
+
+# Turbopack
+.turbo
+
+# Local env files
+.env*.local
+
+# Temporary files
+*.tmp
+*.temp
+/tmp/
+
+# IDE specific
+.eslintcache
+*.bundle.js
+
+# OS specific
+Thumbs.db
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+
+# Compiled output
+dist/
+build/
