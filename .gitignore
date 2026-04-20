@@ -119,4 +119,5 @@ venv/
 bot/data.db
 bot/*.db-journal
 bot/reports/
+bot/tests/fixtures/*.csv
 .pytest_cache/
