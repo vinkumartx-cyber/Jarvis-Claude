@@ -109,3 +109,14 @@ Thumbs.db
 # Compiled output
 dist/
 build/
+
+# Python / trading bot
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+bot/data.db
+bot/*.db-journal
+bot/reports/
+.pytest_cache/

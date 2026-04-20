@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jarvis-trading-bot"
+version = "0.1.0"
+description = "Probability-based trading bot for crypto (5-15m) and Polymarket, paper-trading v1."
+requires-python = ">=3.11"
+readme = "README.md"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["bot*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+markers = [
+    "integration: integration tests that touch the DB",
+]
