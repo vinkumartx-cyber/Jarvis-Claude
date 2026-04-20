@@ -70,6 +70,7 @@ def run_backtest(
     guards: RiskGuards,
     risk_pct: float,
     warmup: int = 60,
+    window_size: int = 200,
 ) -> BacktestResult:
     df = compute_features(df_raw)
     ctx = StrategyContext(venue=venue, symbol=symbol, timeframe=timeframe)
@@ -78,7 +79,11 @@ def run_backtest(
 
     i = warmup
     while i < len(df) - 1:
-        window = df.iloc[: i + 1]
+        # Fixed-size trailing window keeps each iteration O(window_size) instead
+        # of O(i). Strategies only inspect the tail; regime classifier uses
+        # percentile columns that are already precomputed across the full df.
+        start = max(0, i - window_size + 1)
+        window = df.iloc[start : i + 1]
         regime = classify_regime(window)
         strat = select_strategy(regime, list(strategies))
         if strat is None:
@@ -95,9 +100,21 @@ def run_backtest(
             i += 1
             continue
 
-        # Enter on next bar's open (event-driven).
+        # Blown-up account: halt trading. A real broker would reject too.
+        if broker.equity() <= 0:
+            break
+
+        # Fill semantics: assume a limit order at signal.entry. Gap-skip if
+        # the next bar opens so far from signal.entry that our limit wouldn't
+        # have been a realistic fill (post's methodology implicitly relies on
+        # price touching the intended entry, not chasing).
         next_bar = df.iloc[i + 1]
-        entry_ref = float(next_bar["open"])
+        next_open = float(next_bar["open"])
+        gap_pct = abs(next_open - signal.entry) / signal.entry if signal.entry else 0.0
+        if gap_pct > 0.005:  # skip if > 0.5% gap against the signal
+            i += 1
+            continue
+        entry_ref = signal.entry
 
         sd_pct = stop_distance_pct(entry_ref, signal.stop)
         notional = position_size(broker.equity(), risk_pct, sd_pct)
@@ -154,6 +171,9 @@ def run_backtest(
                 else:
                     pnl = (entry_fill.fill_px - exit_fill.fill_px) * qty
 
+                # Broker-style liquidation: equity can't go below zero.
+                if broker.equity() + pnl < 0:
+                    pnl = -broker.equity()
                 broker.apply_pnl(pnl)
 
                 risk_per_unit = abs(entry_fill.fill_px - signal.stop)

@@ -13,39 +13,45 @@ import numpy as np
 import pandas as pd
 
 
+REGIME_POOL = [
+    # (drift_per_bar, sigma, label) — downtrends intentionally shallower than
+    # uptrends so the long-run trajectory doesn't decay to zero (real crypto
+    # has had more upside than downside over the 2020-2026 window).
+    (0.0,     0.0005, "compressed"),
+    (0.0008,  0.0025, "uptrend"),
+    (-0.0004, 0.0030, "downtrend"),
+    (0.0,     0.0040, "range_high_vol"),
+    (0.0,     0.0015, "range_low_vol"),
+    (0.0,     0.0060, "breakout_burst"),
+    (0.0005,  0.0020, "mild_uptrend"),
+    (-0.0003, 0.0022, "mild_downtrend"),
+]
+
+# Hard price floor prevents runaway precision issues but doesn't mask edges.
+PRICE_FLOOR = 100.0
+
+
 def generate(n_bars: int = 5000, seed: int = 42) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
-    ts = pd.date_range("2024-01-01", periods=n_bars, freq="5min")
+    ts = pd.date_range("2020-01-01", periods=n_bars, freq="5min")
 
-    # Regime schedule: (length_pct, drift_per_bar, sigma, regime_label)
-    regimes = [
-        (0.10, 0.0, 0.0005, "compressed_1"),   # tight compression
-        (0.20, 0.0008, 0.0025, "uptrend_1"),   # strong uptrend
-        (0.05, 0.0, 0.006, "breakout_reversal"),
-        (0.20, 0.0, 0.004, "range_1"),         # choppy range
-        (0.05, 0.0, 0.0005, "compressed_2"),
-        (0.15, -0.0009, 0.0030, "downtrend"),
-        (0.15, 0.0, 0.0035, "range_2"),
-        (0.10, 0.0006, 0.0022, "uptrend_2"),
-    ]
-    lengths = [max(1, int(n_bars * w)) for w, *_ in regimes]
-    # Pad/trim to hit exactly n_bars.
-    diff = n_bars - sum(lengths)
-    lengths[-1] += diff
-
-    price = 45_000.0
+    # Draw regimes of variable length (50..3000 bars) until we cover n_bars.
+    # This produces realistic regime-switching without a hand-built schedule.
     closes: list[float] = []
     regime_labels: list[str] = []
+    price = 45_000.0
+    current_sigma = 0.001
 
-    # Simple GARCH-lite volatility clustering: sigma walks around regime sigma.
-    current_sigma = regimes[0][2]
-    for (_, drift, sigma, label), length in zip(regimes, lengths):
+    while len(closes) < n_bars:
+        drift, sigma, label = REGIME_POOL[rng.integers(len(REGIME_POOL))]
+        length = int(rng.integers(50, 3001))
+        length = min(length, n_bars - len(closes))
         for _ in range(length):
-            # Volatility persistence.
+            # GARCH-lite volatility persistence around the regime's sigma.
             current_sigma = 0.92 * current_sigma + 0.08 * sigma + rng.normal(0, sigma * 0.05)
             current_sigma = max(current_sigma, sigma * 0.3)
             shock = rng.normal(drift, current_sigma)
-            price = max(1.0, price * (1 + shock))
+            price = max(PRICE_FLOOR, price * (1 + shock))
             closes.append(price)
             regime_labels.append(label)
 

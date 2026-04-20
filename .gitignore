@@ -116,8 +116,8 @@ __pycache__/
 *.pyo
 .venv/
 venv/
-bot/data.db
-bot/*.db-journal
-bot/reports/
+**/data.db
+**/*.db-journal
+**/reports/
 bot/tests/fixtures/*.csv
 .pytest_cache/

@@ -5,12 +5,20 @@ class InvalidSizingError(ValueError):
     pass
 
 
-def position_size(equity: float, risk_pct: float, stop_distance_pct: float) -> float:
+def position_size(
+    equity: float,
+    risk_pct: float,
+    stop_distance_pct: float,
+    max_leverage: float = 5.0,
+) -> float:
     """Return notional position size.
 
     size = (equity * risk_pct) / stop_distance_pct
 
-    stop_distance_pct must be > 0 (a non-zero stop distance) and risk_pct in (0, 1).
+    Capped at max_leverage * equity. Very tight stops (e.g. stop_distance < 0.2%)
+    otherwise produce highly leveraged positions whose slippage + commission
+    overwhelms the intended 1R risk budget. Most spot crypto retail accounts
+    are 1x; 5x is a conservative default for paper modeling.
     """
     if equity <= 0:
         raise InvalidSizingError("equity must be positive")
@@ -18,7 +26,8 @@ def position_size(equity: float, risk_pct: float, stop_distance_pct: float) -> f
         raise InvalidSizingError("risk_pct must be in (0, 1)")
     if stop_distance_pct <= 0:
         raise InvalidSizingError("stop_distance_pct must be > 0")
-    return (equity * risk_pct) / stop_distance_pct
+    raw = (equity * risk_pct) / stop_distance_pct
+    return min(raw, max_leverage * equity)
 
 
 def stop_distance_pct(entry: float, stop: float) -> float:
